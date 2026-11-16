@@ -39,6 +39,6 @@ export function createServer() {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const port = +process.argv[2] || 8765;
+  const port = +process.argv[2] || +process.env.PORT || 8765;
   createServer().listen(port, () => console.log(`Serving ${ROOT} at http://localhost:${port}`));
 }

@@ -1,0 +1,10 @@
+.git
+**/.git
+node_modules
+tests
+docs
+.github
+engine/build
+public/engine
+*.md
+!engine/networks/**/*.md

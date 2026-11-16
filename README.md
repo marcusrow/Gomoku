@@ -66,6 +66,30 @@ Set `CHROME_PATH=/path/to/chrome` if Chrome is not in a default location. `npm r
 npm run puzzles      # engine self-play, 1-10 min; rewrites public/data/puzzles.json
 ```
 
+## Deploying to a server
+
+The game is a fully static site (no backend, no special headers): the engine runs in the player's browser.
+
+**Docker (recommended).** Needs the network weights checked out first:
+
+```bash
+git submodule update --init engine/networks
+docker build -t rapfi-gomoku .      # builds the engine with Emscripten, then packages nginx + the site
+docker run -d --name gomoku -p 8080:80 --restart unless-stopped rapfi-gomoku
+# or: docker compose up -d --build          (other host port: GOMOKU_PORT=9000 docker compose up -d)
+```
+
+Open `http://<server>:8080`. Health check: `GET /healthz`. Put a TLS reverse proxy (Caddy, Traefik,
+nginx, a cloud load balancer) in front for HTTPS; the image itself serves plain HTTP on port 80.
+
+**Without Docker.** Run `npm run build:engine`, then upload the whole `public/` folder to any static host
+(nginx, S3 + CDN, Netlify, ...). `nginx.conf` shows the settings that matter: serve `.wasm` as
+`application/wasm`, and cache `/engine/` (~40 MB, mostly incompressible weights) while keeping the app
+code revalidated.
+
+Notes: the first visit downloads ~40 MB (cached afterwards). All players' engines run client-side, so server
+load is only static file traffic. The WebAssembly build is single-threaded, so no COOP/COEP headers are needed.
+
 ## Repository layout
 
 ```
