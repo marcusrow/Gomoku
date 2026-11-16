@@ -18,6 +18,9 @@ export const S = {
   viewPly: null, // null = live position; k = browsing the position before move k
   reviewing: false, // a review is running
   puzzles: [], // loaded puzzle list
+  coachOn: false, // coach mode: grade each of my moves right after I play it
+  coach: null, // pending grading data for the move just played
+  coachText: '', // feedback shown under the evaluation bar
   puzzle: null, // active puzzle, or null in normal games
 };
 
@@ -29,4 +32,6 @@ export function resetAnalysis() {
   S.overlay = [];
   S.evalBlack = null;
   S.pvText = '';
+  S.coach = null;
+  S.coachText = '';
 }

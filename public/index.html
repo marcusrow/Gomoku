@@ -66,6 +66,9 @@
       <button id="import">Import</button>
       <input type="file" id="file" accept=".json" hidden>
     </div>
+    <label class="check" title="After each of your moves the engine shows how good it was and what it preferred">
+      <input type="checkbox" id="coach"> Coach mode: grade my moves as I play
+    </label>
     <div class="row">
       <button id="review" title="Have the engine grade every move of this game">Review game</button>
     </div>
@@ -73,6 +76,7 @@
     <div class="eval">
       <div class="bar"><div id="evalFill"></div></div>
       <div id="evalText">—</div>
+      <div id="coachText"></div>
     </div>
     <pre id="pv">No analysis yet.</pre>
 

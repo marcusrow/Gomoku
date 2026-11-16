@@ -153,3 +153,22 @@ test('review flags a blunder; saving keeps the review and loading restores it', 
   await waitStatus(/Game opened with its review/);
   assert.equal(await page.$eval('#reviewSummary', (e) => e.innerText), before);
 });
+
+test('hint shows win chance; bar and coach feedback update after my move', async () => {
+  await freshPage();
+  await page.select('#level', '0');
+  await page.click('#new');
+  await waitStatus(/Your turn/);
+  await click(7, 7);
+  await waitStatus(/Your turn/);
+  assert.match(await page.$eval('#evalText', (e) => e.textContent), /Eval \(Black\)|wins by force/);
+  await page.click('#hint');
+  assert.match(await waitStatus(/Hint:/), /Hint: [A-O]\d+ \(win (\d+%|[+-]M\d+)\)/);
+
+  await page.click('#coach');
+  await click(0, 0); // a pointless corner move
+  await waitStatus(/Your turn/);
+  const text = await page.$eval('#coachText', (e) => e.textContent);
+  assert.match(text, /Your move A15: .*\nWin chance /s);
+  assert.match(text, /engine preferred [A-O]\d+/);
+});

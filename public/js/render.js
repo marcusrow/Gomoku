@@ -92,11 +92,18 @@ function drawLiveMarkers() {
   }
   for (const o of S.overlay) {
     ctx.fillStyle = 'rgba(46,160,67,.85)';
-    circle(o.x, o.y, R * 0.8);
+    circle(o.x, o.y, R * 0.95);
     ctx.fill();
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 18px system-ui';
-    ctx.fillText(o.text, px(o.x), px(o.y));
+    if (o.sub) {
+      ctx.font = 'bold 14px system-ui';
+      ctx.fillText(o.text, px(o.x), px(o.y) - 6);
+      ctx.font = 'bold 11px system-ui';
+      ctx.fillText(o.sub, px(o.x), px(o.y) + 8);
+    } else {
+      ctx.font = 'bold 18px system-ui';
+      ctx.fillText(o.text, px(o.x), px(o.y));
+    }
   }
   const h = S.hover;
   if (h && !S.busy && !S.gameOver && turn() === S.human && !S.moves.some((m) => m.x === h.x && m.y === h.y)) {
@@ -149,6 +156,7 @@ function updateSidePanel() {
       ? `${S.evalBlack > 0 ? 'Black' : 'White'} wins by force · ${fmtEval(S.evalBlack)}`
       : `Eval (Black): ${fmtEval(S.evalBlack)} · win ~${(blackWin * 100).toFixed(0)}%`;
   }
+  $('coachText').textContent = S.coachText;
   $('pv').textContent = S.pvText || 'No analysis yet.';
   $('review').disabled = (S.busy && !S.reviewing) || (!S.reviewing && S.moves.length < 2);
 }

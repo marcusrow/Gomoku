@@ -21,6 +21,7 @@ $('new').onclick = () => newGame();
 $('undo').onclick = undo;
 $('hint').onclick = () => analyze(1);
 $('analyze').onclick = () => analyze(5);
+$('coach').onchange = (e) => { S.coachOn = e.target.checked; };
 $('review').onclick = runReview;
 $('save').onclick = saveGame;
 $('load').onclick = loadGame;

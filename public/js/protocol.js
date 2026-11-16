@@ -38,6 +38,9 @@ export function winProb(v) {
   return 1 / (1 + Math.exp(-v / SCALING_FACTOR));
 }
 
+/** Win chance of the side a value is for, as display text ("73%", or "+M5" for a forced win). */
+export const fmtWin = (v) => (isMateValue(v) ? fmtEval(v) : Math.round(winProb(v) * 100) + '%');
+
 /** Engine message coordinates ("H8": column letter, row counted from the bottom) → {x, y}. */
 export function parseCoord(token) {
   const m = /^([A-Za-z])(\d+)$/.exec(token);

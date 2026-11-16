@@ -2,12 +2,13 @@
 import { ANALYZE_MS, HINT_MS, LEVELS, MATE_BASE } from './config.js';
 import { S, turn, resetAnalysis } from './state.js';
 import { engine } from './engine.js';
-import { bestMoveOf, boardCmd, fmtEval, isBestMove, label, makeParser, searchSetup } from './protocol.js';
+import { bestMoveOf, boardCmd, fmtEval, isBestMove, fmtWin, label, makeParser, searchSetup } from './protocol.js';
 import { checkWin, key } from './rules.js';
 import { $, setBusy, setStatus } from './ui.js';
 import { render } from './render.js';
 import { clearReview } from './review.js';
 import { puzzleMove } from './puzzles.js';
+import { finishCoach, preAnalyze } from './coach.js';
 
 /** Asks the engine for Black's forbidden points (Renju only, when Black is to move). */
 export async function refreshForbidden() {
@@ -47,13 +48,26 @@ export async function engineMove() {
   const { ms, depth } = LEVELS[S.level];
   const cmds = searchSetup(S.rule, ms, depth);
   cmds.push(...(S.moves.length ? [boardCmd('BOARD', S.moves)] : ['RESTART', 'BEGIN']));
-  const lines = await engine.ask(cmds, isBestMove, (l) => parser.feed(l));
-  if (my !== S.token) return;
   const searcherIsBlack = turn() === 0; // read before the move flips the turn
+  // Update the bar live while the engine thinks: this is the evaluation of the position after the
+  // human's move, so the bar reacts to the human's move instead of waiting for the engine's reply.
+  let lastDepth = 0;
+  const lines = await engine.ask(cmds, isBestMove, (l) => {
+    parser.feed(l);
+    const st = parser.st;
+    if (my === S.token && st.depth !== lastDepth && st.eval != null) {
+      lastDepth = st.depth;
+      setEval(st.eval, st.pv, searcherIsBlack);
+      render();
+    }
+  });
+  if (my !== S.token) return;
   clearReview();
   S.moves.push(bestMoveOf(lines));
   setEval(parser.st.eval, parser.st.pv, searcherIsBlack);
   await afterMove();
+  const engineSide = searcherIsBlack ? 0 : 1;
+  finishCoach(parser.st.eval ?? (S.gameOver && S.gameOver.winner === engineSide ? MATE_BASE - 1 : null));
 }
 
 export async function humanMove(x, y) {
@@ -63,9 +77,15 @@ export async function humanMove(x, y) {
   if (S.forbidden.has(key(x, y))) return setStatus('Forbidden move (3-3, 4-4 or overline) — pick another point.');
   S.token++;
   S.overlay = [];
+  S.coach = null;
+  S.coachText = '';
   clearReview();
+  let coach = null;
+  if (S.coachOn) coach = await preAnalyze();
   S.moves.push({ x, y });
+  if (coach) S.coach = { ...coach, played: { x, y } };
   await afterMove();
+  if (S.gameOver) finishCoach(null); // the human's move ended the game
 }
 
 /** Starts a new game, or resumes from `initial` moves. Reads rule/side/level from the form. */
@@ -125,14 +145,16 @@ export async function analyze(n) {
     candidates.push({ eval: win && win.winner === side ? MATE_BASE - 1 : 0, depth: 0, pv: [best] });
   }
 
+  // Each candidate's value is from the mover's view, so its win probability is "my chance if I play here".
+  const pct = fmtWin;
   S.overlay = candidates
     .filter((c) => c.pv.length)
-    .map((c, i) => ({ x: c.pv[0].x, y: c.pv[0].y, text: String(i + 1) }));
+    .map((c, i) => ({ x: c.pv[0].x, y: c.pv[0].y, text: String(i + 1), sub: pct(c.eval) }));
   setEval(candidates[0].eval, candidates[0].pv, side === 0);
   S.pvText = candidates
-    .map((c, i) => `${i + 1}. ${c.pv[0] ? label(c.pv[0]) : '?'}  (${fmtEval(c.eval)})  ${c.pv.map(label).join(' ')}`)
+    .map((c, i) => `${i + 1}. ${c.pv[0] ? label(c.pv[0]) : '?'}  (${fmtEval(c.eval)}, win ${pct(c.eval)})  ${c.pv.map(label).join(' ')}`)
     .join('\n');
   setBusy(false);
   render();
-  setStatus(n === 1 && S.overlay[0] ? `Hint: ${label(S.overlay[0])}` : 'Analysis done — numbers on the board rank the moves.');
+  setStatus(n === 1 && S.overlay[0] ? `Hint: ${label(S.overlay[0])} (win ${S.overlay[0].sub})` : 'Analysis done — each move shows its rank and your win chance if you play it.');
 }
