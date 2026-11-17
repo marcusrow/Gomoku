@@ -1,3 +1,5 @@
+<p align="center"><img src="public/logo.svg" width="96" alt="Rapfi Gomoku logo"></p>
+
 # Rapfi Gomoku
 
 A Gomoku / Renju game you play in the browser against the strong [Rapfi](engine/README.md) engine. The engine is
